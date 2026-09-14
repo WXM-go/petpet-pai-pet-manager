@@ -1,0 +1,28 @@
+{
+  "id": "soft-blob",
+  "displayName": "软团团",
+  "description": "温柔好奇的奶油软胶团子，会在桌面陪你工作、休息和玩耍。",
+  "spriteVersionNumber": 2,
+  "spritesheetPath": "spritesheet.webp",
+  "previewPath": "preview.png",
+  "renderingMode": "smooth",
+  "care": {
+    "version": 1,
+    "mode": "light-care",
+    "interactions": ["pet", "feed", "play", "rest"],
+    "stats": ["happiness", "satiety", "energy"],
+    "actionMap": {
+      "pet": "waving",
+      "feed": "waiting",
+      "play": "jumping",
+      "rest": "idle"
+    },
+    "animations": {
+      "pet": "interactions/pet.gif",
+      "feed": "interactions/feed.gif",
+      "play": "interactions/play.gif",
+      "drowsy": "interactions/drowsy.gif",
+      "sleep": "interactions/sleep.gif"
+    }
+  }
+}

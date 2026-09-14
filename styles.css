@@ -1,0 +1,146 @@
+:root {
+  --pet-width: 240px;
+  --pet-height: 260px;
+  --handle-left: 30px;
+  --handle-width: 180px;
+  --handle-height: 22px;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+body {
+  user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+.pet-shell {
+  width: var(--pet-width);
+  height: var(--pet-height);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: transparent;
+  -webkit-app-region: no-drag;
+}
+
+.pet-stage {
+  width: var(--pet-width);
+  height: var(--pet-height);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+  -webkit-app-region: no-drag;
+  cursor: move;
+}
+
+.drag-handle {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: var(--handle-left);
+  width: var(--handle-width);
+  height: var(--handle-height);
+  background: transparent;
+  -webkit-app-region: no-drag;
+}
+
+#pet-canvas {
+  width: var(--pet-width);
+  height: var(--pet-height);
+  image-rendering: auto;
+  display: block;
+}
+
+#pet-canvas.pixelated { image-rendering: pixelated; image-rendering: crisp-edges; }
+#pet-canvas.smooth { image-rendering: auto; }
+#pet-canvas.care-animation-active { opacity: 0; }
+
+.care-animation {
+  position: absolute;
+  inset: 0;
+  width: var(--pet-width);
+  height: var(--pet-height);
+  object-fit: fill;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+
+.care-animation.visible { opacity: 1; }
+
+.status {
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  transform: translateX(-50%);
+  padding: 2px 7px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .8);
+  color: #2e3b4e;
+  font: 11px/1.2 "Microsoft YaHei", sans-serif;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.interaction-bubble {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 6px;
+  padding: 9px;
+  border: 1px solid rgba(113, 128, 255, .2);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 12px 28px rgba(55, 67, 117, .2);
+  opacity: 0;
+  transform: translate(-50%, -5px) scale(.96);
+  pointer-events: none;
+  transition: opacity .16s ease, transform .16s ease;
+}
+
+.interaction-bubble.visible {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+  pointer-events: auto;
+}
+
+.interaction-bubble button {
+  min-width: 58px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 9px;
+  color: #47527a;
+  background: #f3f5ff;
+  font: 11px/1.2 "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  cursor: pointer;
+}
+
+.interaction-bubble button:hover,
+.interaction-bubble button:focus-visible {
+  color: #fff;
+  background: #6373f4;
+  outline: none;
+}
+
+html[data-pet-scale="tiny"] .interaction-bubble {
+  grid-template-columns: max-content;
+  top: 0;
+  gap: 4px;
+  padding: 6px;
+}
+
+html[data-pet-scale="tiny"] .interaction-bubble button {
+  min-width: 74px;
+  padding: 4px 7px;
+  font-size: 10px;
+}

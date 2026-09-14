@@ -1,0 +1,14 @@
+.worktrees/
+node_modules/
+release/
+dist/
+outputs/
+artifacts/
+*.log
+.smoke-user-data/
+.old-smoke-user-data/
+.electron-cache/
+.electron-zip-cache/
+pets/
+petpet-state.json
+preview-assets/

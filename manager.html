@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>派派桌宠管理器</title>
+  <link rel="stylesheet" href="manager.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">
+        <div class="brand-mark"><img src="assets/app-icon.png" alt=""></div>
+        <div><h1>派派</h1><p>桌宠管理器</p></div>
+      </div>
+      <nav class="side-nav">
+        <button class="nav-item active" type="button" data-scroll="library-section"><span aria-hidden="true">⌂</span>桌宠库</button>
+        <button class="nav-item" type="button" data-scroll="care-panel"><span aria-hidden="true">♡</span>陪伴状态</button>
+        <button class="nav-item" type="button" data-scroll="preference-panel"><span aria-hidden="true">◌</span>偏好设置</button>
+      </nav>
+      <div class="sidebar-note"><span class="note-dot"></span><p>桌宠是陪伴，不是任务。<br>按自己的节奏和它相处就好。</p></div>
+    </aside>
+
+    <main class="workspace">
+      <header class="page-head">
+        <div><span class="eyebrow">我的桌面伙伴</span><h2>桌宠库</h2><p>挑一只喜欢的桌宠，让它留在桌边陪你。</p></div>
+        <div class="top-actions"><button class="button button-soft" id="preview-button">动作预览</button><button class="button button-primary" id="import-zip-button">导入桌宠</button><button class="button button-soft more-button" id="more-import-button" title="从文件夹导入">更多</button></div>
+      </header>
+
+      <section class="hero-card" aria-labelledby="selected-name">
+        <div class="hero-copy"><div class="hero-kicker"><span class="live-dot"></span><span id="pet-status-line">正在连接桌宠</span></div><h3 id="selected-name">正在加载…</h3><p id="selected-description">派派会把你的桌宠集中放在这里管理。</p><div class="hero-actions"><button class="button button-primary" id="run-button">运行桌宠</button><button class="button button-soft" id="hide-button">隐藏桌宠</button><button class="button button-soft" id="pause-button">暂停 / 继续</button></div></div>
+        <div class="hero-preview" id="hero-preview"><canvas width="192" height="208" aria-label="当前桌宠预览"></canvas></div>
+      </section>
+
+      <section class="library-section" id="library-section" aria-labelledby="library-title">
+        <div class="section-heading"><div><span class="eyebrow">已添加的伙伴</span><h3 id="library-title">桌宠库 <span class="count-pill" id="pet-count">0 只</span></h3></div><div class="library-tools"><label class="search-box"><span aria-hidden="true">⌕</span><input id="pet-search" type="search" placeholder="搜索桌宠" aria-label="搜索桌宠"></label><select id="pet-filter" aria-label="筛选桌宠"><option value="all">全部类型</option><option value="care">有陪伴状态</option><option value="basic">即时互动</option></select></div></div>
+        <div class="pet-grid" id="pet-grid"></div>
+      </section>
+    </main>
+
+    <aside class="detail-panel" aria-label="桌宠详情与控制">
+      <div class="detail-head"><div><span class="eyebrow">当前选择</span><h3 id="detail-name">软团团</h3></div><span class="mode-badge" id="capability-badge">即时互动</span></div>
+      <p class="detail-description" id="detail-description">选择一只桌宠查看它的能力和陪伴状态。</p>
+      <section class="care-panel" id="care-panel" aria-labelledby="care-title"><div class="subsection-head"><h4 id="care-title">陪伴状态</h4><span id="care-status-label">准备好陪你</span></div><div class="stat-list" id="stat-list"><div class="stat-row" data-stat="happiness"><div><span>快乐</span><strong id="happiness-value">—</strong></div><div class="stat-track"><i></i></div></div><div class="stat-row" data-stat="satiety"><div><span>饱腹</span><strong id="satiety-value">—</strong></div><div class="stat-track"><i></i></div></div><div class="stat-row" data-stat="energy"><div><span>精力</span><strong id="energy-value">—</strong></div><div class="stat-track"><i></i></div></div></div><p class="muted-note" id="care-note">这个桌宠没有长期状态，但仍可进行即时互动。</p></section>
+      <section class="interaction-panel" aria-labelledby="interaction-title"><div class="subsection-head"><h4 id="interaction-title">和它互动</h4><span>桌面也可以单击它</span></div><div class="interaction-actions"><button type="button" data-interaction="pet"><span aria-hidden="true">♡</span>摸摸</button><button type="button" data-interaction="feed"><span aria-hidden="true">✦</span>喂零食</button><button type="button" data-interaction="play"><span aria-hidden="true">⌁</span>一起玩</button><button type="button" data-interaction="rest"><span aria-hidden="true">☾</span>休息</button></div></section>
+      <section class="action-panel" aria-labelledby="action-title"><div class="subsection-head"><h4 id="action-title">动作</h4><button class="text-button" id="open-action-preview">查看全部</button></div><div class="action-list" id="action-list"></div></section>
+      <section class="preference-panel" id="preference-panel" aria-labelledby="preference-title"><div class="subsection-head"><h4 id="preference-title">偏好设置</h4></div><label class="toggle-row"><span><strong>鼠标跟随</strong><small>根据鼠标位置转头</small></span><input type="checkbox" id="mouse-follow-toggle" checked><i></i></label><label class="toggle-row"><span><strong>键盘动作</strong><small>只检测活动，不读取内容</small></span><input type="checkbox" id="keyboard-action-toggle" checked><i></i></label><label class="select-row" for="scale-select"><span><strong>桌宠大小</strong><small>可缩小到 50%</small></span><select id="scale-select"><option value="0.5">极小 · 50%</option><option value="0.65">偏小 · 65%</option><option value="0.8">小 · 80%</option><option value="1" selected>标准 · 100%</option><option value="1.25">大 · 125%</option><option value="1.5">特大 · 150%</option></select></label></section>
+      <p class="security-note">桌宠包只读取图片与配置，不运行其中的脚本。</p>
+    </aside>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="src/copy.js"></script><script src="src/rendering.js"></script><script src="manager-renderer.js"></script>
+</body>
+</html>

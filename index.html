@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>派派桌宠</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="pet-shell" aria-label="派派桌宠">
+    <div class="pet-stage">
+      <div class="drag-handle" title="拖动桌宠"></div>
+      <canvas id="pet-canvas" width="192" height="208" aria-label="派派桌宠"></canvas>
+      <img id="care-animation" class="care-animation" alt="" aria-hidden="true">
+      <span id="status" class="status" aria-hidden="true">待机</span>
+      <div id="interaction-bubble" class="interaction-bubble" role="menu" aria-label="桌宠互动" aria-hidden="true">
+        <button type="button" data-interaction="pet">摸摸</button>
+        <button type="button" data-interaction="feed">喂零食</button>
+        <button type="button" data-interaction="play">一起玩</button>
+        <button type="button" data-interaction="rest">休息</button>
+      </div>
+    </div>
+  </main>
+  <script src="src/pet-model.js"></script>
+  <script src="src/direction-layout.js"></script>
+  <script src="src/rendering.js"></script>
+  <script src="src/playback-policy.js"></script>
+  <script src="src/interaction-layer.js"></script>
+  <script src="src/pet-player.js"></script>
+  <script src="src/renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "petpet-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "派派桌宠管理器：支持像素、插画、3D 与手绘风格的 Windows 桌宠管理工具",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "electron .",
+    "package:win": "electron-packager . 派派桌宠管理器 --platform=win32 --arch=x64 --out=release --overwrite --asar --prune=true --icon=assets/app-icon.ico --ignore=\"\\.electron-cache|\\.electron-zip-cache|\\.smoke-user-data|\\.old-smoke-user-data|release|dist|test|artifacts|pets|petpet-state\\.json|preview-assets|\\.log\""
+  },
+  "dependencies": {
+    "extract-zip": "^2.0.1"
+  },
+  "devDependencies": {
+    "electron": "^44.3.0",
+    "electron-packager": "^17.1.2"
+  }
+}
