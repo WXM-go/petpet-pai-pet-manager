@@ -5,13 +5,12 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 
-test('软团团 is the bundled v2 default while 马亚鹏 remains an importable example', () => {
+test('软团团 is the bundled v2 default pet', () => {
   const assetsRoot = path.join(root, 'assets');
   const bundledRoot = path.join(assetsRoot, 'soft-blob');
   const manifest = JSON.parse(fs.readFileSync(path.join(bundledRoot, 'pet.json'), 'utf8'));
 
   assert.equal(fs.existsSync(path.join(assetsRoot, 'pet.json')), false);
-  assert.equal(fs.existsSync(path.join(root, 'examples', 'ma-ya-peng', 'pet.json')), true);
   assert.equal(manifest.id, 'soft-blob');
   assert.equal(manifest.displayName, '软团团');
   assert.equal(manifest.spriteVersionNumber, 2);

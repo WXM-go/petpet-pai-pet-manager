@@ -8,15 +8,15 @@ const {
 
 test('normalizes a valid Codex v2 pet manifest', () => {
   assert.deepEqual(normalizeManifest({
-    id: 'ma-ya-peng',
-    displayName: '马亚鹏',
-    description: '篮球桌宠',
+    id: 'sample-pet',
+    displayName: '示例桌宠',
+    description: '通用示例',
     spriteVersionNumber: 2,
     spritesheetPath: 'spritesheet.webp',
   }), {
-    id: 'ma-ya-peng',
-    displayName: '马亚鹏',
-    description: '篮球桌宠',
+    id: 'sample-pet',
+    displayName: '示例桌宠',
+    description: '通用示例',
     spriteVersionNumber: 2,
     spritesheetPath: 'spritesheet.webp',
     renderingMode: 'pixelated',
@@ -86,7 +86,7 @@ test('rejects manifests that escape the pet package directory', () => {
 });
 
 test('generates a non-colliding folder name for duplicate pet ids', () => {
-  assert.equal(getUniquePetFolderName('ma-ya-peng', new Set()), 'ma-ya-peng');
-  assert.equal(getUniquePetFolderName('ma-ya-peng', new Set(['ma-ya-peng'])), 'ma-ya-peng-2');
-  assert.equal(getUniquePetFolderName('ma-ya-peng', new Set(['ma-ya-peng', 'ma-ya-peng-2'])), 'ma-ya-peng-3');
+  assert.equal(getUniquePetFolderName('sample-pet', new Set()), 'sample-pet');
+  assert.equal(getUniquePetFolderName('sample-pet', new Set(['sample-pet'])), 'sample-pet-2');
+  assert.equal(getUniquePetFolderName('sample-pet', new Set(['sample-pet', 'sample-pet-2'])), 'sample-pet-3');
 });
