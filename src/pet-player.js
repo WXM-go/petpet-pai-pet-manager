@@ -19,6 +19,7 @@
       frame: 0,
       direction: '000',
       pointerDirection: '000',
+      pointerFollowing: true,
       paused: false,
       demo: true,
       nextFrameAt: 0,
@@ -146,6 +147,31 @@
       draw();
     }
 
+    function resetPointerDirection() {
+      state.pointerDirection = '000';
+      state.direction = '000';
+      notify();
+      draw();
+    }
+
+    function setPointerFollowing(enabled) {
+      state.pointerFollowing = Boolean(enabled);
+      if (!state.pointerFollowing) {
+        resetPointerDirection();
+        state.mode = 'action';
+        state.action = 'idle';
+        state.frame = 0;
+        state.remainingLoops = 0;
+        state.nextFrameAt = 0;
+        notify();
+        draw();
+      }
+      else {
+        notify();
+        draw();
+      }
+    }
+
     function setSpriteUrl(spriteUrl, nextRenderingMode = currentRenderingMode) {
       currentRenderingMode = nextRenderingMode || 'pixelated';
       ctx.imageSmoothingEnabled = currentRenderingMode === 'smooth';
@@ -184,8 +210,13 @@
             state.action = 'idle';
             state.frame = 0;
             state.remainingLoops = 0;
-            state.mode = 'look';
-            state.direction = state.pointerDirection;
+            state.nextFrameAt = timestamp;
+            if (state.pointerFollowing) {
+              state.mode = 'look';
+              state.direction = state.pointerDirection;
+            } else {
+              state.mode = 'action';
+            }
           }
           notify();
         }
@@ -206,6 +237,8 @@
       setAction,
       setDirection,
       setPointerDirection,
+      resetPointerDirection,
+      setPointerFollowing,
       setSpriteUrl,
       setPaused,
       setDemo,

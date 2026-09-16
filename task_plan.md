@@ -31,3 +31,19 @@
 - 新增互动播放层策略：有专属动画时隐藏底层画布并停止图集动作；没有专属动画时继续使用标准动作回退。
 - 互动动画结束后恢复底层画布，并按睡眠状态规则决定是否恢复自动演示。
 - 本轮验收：46/46 测试通过，JavaScript 语法检查通过，Windows x64 便携版重新打包并启动冒烟通过。
+
+## Renderer process launch-failed 修复（2026-09-16）
+
+- [completed] 使用独立可写 `--user-data-dir` 稳定复现 renderer launch-failed，并收集 Electron 主进程、窗口、preload、GPU 和 Windows 日志。
+- [completed] 通过最小 Electron 对照和 sandbox 选项矩阵确认根因：本机 Windows 环境下 sandboxed renderer 以 `reason=launch-failed, exitCode=49` 退出；GPU 子进程另有 `0xC0000135` 崩溃信号。
+- [completed] 为三个 BrowserWindow 显式设置 `sandbox: false`，保留 `contextIsolation: true`、`nodeIntegration: false` 和受限 preload IPC；增加 renderer/preload/加载/子进程诊断日志。
+- [completed] 修复后独立可写目录启动未出现 renderer launch/load failure；`npm test` 70/70，全部 JavaScript 语法检查和 `git diff --check` 通过。
+
+## 最终发布准备（2026-09-16）
+
+- [completed] 核对版本为 `1.0.0`，未修改已通过 QA 的功能逻辑。
+- [completed] 保留原 `release` 和已通过 QA 的 `release-final` 目录及数据，生成独立的 `release-final-delivery\\派派桌宠管理器-win32-x64` 交付目录。
+- [completed] 核对 EXE、`resources\\app.asar`、应用图标和软团团资源；交付目录 73 个文件、2 个目录，app.asar 270 个条目。
+- [completed] 交付目录未发现测试目录、QA 临时目录、缓存、运行态文件或开发计划文件。
+- [completed] 完成用户启动/导入说明、更新日志、发布记录和中文文案审核表。
+- [completed] QA 已确认原生窗口 UI、按钮 IPC、桌宠互动、自动演示、预览窗口和正常退出，完成最终本地发布交付。

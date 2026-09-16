@@ -1,6 +1,6 @@
 const DEMO_ACTIONS = ['waving', 'jumping', 'running', 'review', 'waiting', 'running-right', 'running-left'];
-const { shouldAutoDemo } = PetPlaybackPolicy;
-const { getInteractionPlaybackPlan } = PetInteractionLayer;
+const { shouldAutoDemo, shouldRescheduleDemo } = PetPlaybackPolicy;
+const { createRuntimeCapabilityReport, getInteractionPlaybackPlan } = PetRuntime;
 const canvas = document.getElementById('pet-canvas');
 const status = document.getElementById('status');
 const dragSurface = document.querySelector('.pet-stage');
@@ -20,6 +20,8 @@ let demoIndex = 0;
 let isDragging = false;
 let inputSettings = { mouseFollow: true, keyboardAction: true };
 let currentPet = null;
+let runtimeCapabilities = createRuntimeCapabilityReport();
+let isResting = false;
 let dragStart = null;
 let hasDragged = false;
 let careAnimationTimer;
@@ -48,17 +50,20 @@ function toggleInteractionBubble(force) {
 }
 
 function playInteraction(kind) {
-  const animationUrl = currentPet?.animationUrls?.[kind];
-  const playbackPlan = getInteractionPlaybackPlan(animationUrl);
+  if (kind === 'rest') {
+    isResting = true;
+    clearTimeout(demoTimer);
+  } else {
+    isResting = false;
+  }
+  const playbackPlan = getInteractionPlaybackPlan(runtimeCapabilities, kind, currentPet?.animationUrls);
   if (playbackPlan.useOverlay) {
     player.setAction('idle', { loops: 0 });
-    showCareAnimation(animationUrl, kind === 'rest' ? 1800 : 1200);
+    showCareAnimation(playbackPlan.animationUrl, kind === 'rest' ? 1800 : 1200);
     return;
   }
-  const action = currentPet?.manifest?.care?.actionMap?.[kind]
-    || ({ pet: 'waving', feed: 'waiting', play: 'jumping', rest: 'idle' }[kind]);
-  if (playbackPlan.playAtlasAction && action && PetModel.ACTIONS[action]) {
-    player.setAction(action, { loops: action === 'idle' ? 0 : 1 });
+  if (playbackPlan.playAtlasAction) {
+    player.setAction(playbackPlan.action, { loops: playbackPlan.action === 'idle' ? 0 : 1 });
   }
 }
 
@@ -80,7 +85,7 @@ function showCareAnimation(animationUrl, durationMs) {
 
 function scheduleDemo() {
   clearTimeout(demoTimer);
-  if (!shouldAutoDemo({ demoEnabled: player.state.demo, careStatus: lastCareStatus })) return;
+  if (!shouldAutoDemo({ demoEnabled: player.state.demo, careStatus: lastCareStatus, resting: isResting })) return;
   demoTimer = setTimeout(() => {
     player.setAction(DEMO_ACTIONS[demoIndex % DEMO_ACTIONS.length], { loops: 1 });
     demoIndex += 1;
@@ -91,7 +96,12 @@ function scheduleDemo() {
 window.petAPI.onCommand((command) => {
   if (command.type === 'load-pet') {
     currentPet = command.pet;
+    runtimeCapabilities = currentPet.runtimeCapabilities || createRuntimeCapabilityReport({
+      manifest: currentPet.manifest,
+      resources: { animations: Object.fromEntries(Object.keys(currentPet.animationUrls || {}).map((name) => [name, {}])) },
+    });
     lastCareStatus = undefined;
+    isResting = false;
     setRenderingMode(command.pet.manifest.renderingMode);
     player.setSpriteUrl(command.pet.spriteUrl, command.pet.manifest.renderingMode);
     document.title = `${command.pet.manifest.displayName} · 派派`;
@@ -111,7 +121,7 @@ window.petAPI.onCommand((command) => {
     }
   } else if (command.type === 'settings') {
     inputSettings = { ...inputSettings, ...command.value };
-    if (!inputSettings.mouseFollow) player.setDirection('000');
+    player.setPointerFollowing(inputSettings.mouseFollow);
   } else if (command.type === 'demo') {
     player.setDemo(command.value);
     if (command.value) scheduleDemo(); else clearTimeout(demoTimer);
@@ -126,6 +136,7 @@ window.petAPI.onCommand((command) => {
     status.textContent = statusLabel;
     status.style.opacity = statusLabel ? '1' : '0';
     const nextStatus = command.value?.status;
+    const previousCareStatus = lastCareStatus;
     if (nextStatus === 'sleeping') {
       clearTimeout(demoTimer);
       player.setAction('idle', { loops: 0 });
@@ -135,7 +146,12 @@ window.petAPI.onCommand((command) => {
       if (animationUrl) showCareAnimation(animationUrl, nextStatus === 'sleeping' ? 1800 : 1400);
     }
     lastCareStatus = nextStatus;
-    if (nextStatus !== 'sleeping') scheduleDemo();
+    if (shouldRescheduleDemo({
+      demoEnabled: player.state.demo,
+      careStatus: nextStatus,
+      resting: isResting,
+      previousCareStatus,
+    })) scheduleDemo();
   }
 });
 

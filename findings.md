@@ -38,3 +38,20 @@
 - 工作区未发现 `CHANGELOG.md`、许可证、发布记录、测试计划、回归报告、兼容性矩阵或 `pet.schema.json`；`README.txt` 与使用说明能指导基本使用，但不能替代发布证据和协议文档。
 - `package:win` 生成的是 `release` 下的目录，没有压缩归档、产物哈希或自动验证步骤；当前 release 目录还残留运行态 `pets/` 与 `petpet-state.json`。
 - 本地 contact sheet 视觉检查显示标准动作和方向图集已正确分格、透明背景正常；但这不能替代真实 Electron 缩放/窗口截图，方向闭环的两个 QA 警告仍应视为待复核项。
+
+## 2026-09-16 Renderer process launch-failed 根因调查
+
+- 使用 Electron 44.3.0 和独立可写 `%TEMP%\petpet-*` 用户数据目录复现；当前项目启动约 12 秒内重复输出 `Renderer process launch-failed`，主进程仍能读取 `index.html` 与 `manager.html`。
+- 进程级诊断记录到 `render-process-gone: { reason: "launch-failed", exitCode: 49 }`，随后 `loadFile` 以 `ERR_FAILED (-2)` 拒绝；不是业务页面脚本异常或 preload 语法异常。
+- 最小 Electron 对照同样观察到 GPU 子进程 `crashed`，Windows 退出码 `-1073741515`（`0xC0000135`），且 Electron 日志标记 GPU process 不可用；`--in-process-gpu` 可使 GPU 对照页正常加载。
+- 在相同独立用户数据目录、相同 Electron、相同 preload 和相同 `index.html` 下，省略 `webPreferences.sandbox` 或显式 `sandbox: true` 都复现 renderer launch-failed；显式 `sandbox: false` 才能完成 `dom-ready` 和 `did-finish-load`。因此当前环境的直接根因是 Electron sandboxed renderer 无法启动，GPU DLL 崩溃是并存的环境信号而非最终 renderer 阻断点。
+- 主进程当前已使用 `disable-gpu`、`in-process-gpu` 和 `disableHardwareAcceleration()`，保留这些设置可规避本机 GPU 子进程 DLL 问题；修复范围应只在三个窗口的 webPreferences 明确关闭 renderer sandbox，同时保留 contextIsolation、禁用 nodeIntegration 和受限 IPC。
+- 临时诊断文件位于 `artifacts/renderer-diagnosis/main.js`，仅用于复现矩阵，修复验证后移除。
+
+## 2026-09-16 最终发布准备盘点
+
+- 当前 `package.json` 与 `package-lock.json` 版本均为 `1.0.0`；本次发布准备不升版本号。
+- 最近 QA 记录确认新便携版启动层未出现 `Renderer process launch-failed`，但管理器、桌宠、预览窗口的可见状态、按钮 IPC、互动、自动演示和正常退出仍未完成真实 UI 验证。
+- 现有 `release\\派派桌宠管理器-win32-x64` 在 QA 启动后生成了 `petpet-state.json` 和 `pets` 运行态目录；该目录不能直接作为干净发布目录，原目录和数据必须保留。
+- 发布准备需要生成新的干净输出目录，不能删除或覆盖原有 release 产物和用户数据。
+- 发布文档必须明确版本为 `1.0.0`，并把真实 UI/IPC/退出验证保留为已知风险，不写成已通过。

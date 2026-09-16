@@ -3,14 +3,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { spawn } = require('node:child_process');
-const extractZip = require('extract-zip');
 const PetModel = require('./pet-model');
 const WindowControls = require('./window-controls');
-const { normalizeManifest, getUniquePetFolderName, resolveWithin, assertNoSymlinkComponents } = require('./pet-library');
+const { resolveWithin } = require('./pet-library');
+const { scanPackageTree, validatePetPackage } = require('./pet-package');
+const { cleanupImportStaging, importPetDirectory, importPetZip } = require('./pet-import');
 const { quantizeDirection } = require('./direction-utils');
 const { COPY, formatPetTitle, formatDirectionLabel, formatScaleLabel } = require('./copy');
 const { CARE_MODES, createCareModel } = require('./care-model');
 const { shouldSyncBundledFiles } = require('./bundled-pet-sync');
+const { createRuntimeCapabilityReport } = require('./pet-runtime');
+const { createRendererWebPreferences } = require('./electron-window-options');
 
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('in-process-gpu');
@@ -36,6 +39,27 @@ let statePath;
 let bundledPetReady = false;
 let state = { selectedPetFolder: DEFAULT_PET_FOLDER, settings: { ...DEFAULT_SETTINGS }, petCare: {} };
 const careModels = new Map();
+const packageValidationCache = new Map();
+
+function attachRendererDiagnostics(window, label) {
+  const { webContents } = window;
+  webContents.on('render-process-gone', (_event, details) => {
+    console.error(`[${label}] renderer process gone: ${JSON.stringify(details)}`);
+  });
+  webContents.on('preload-error', (_event, preloadPath, error) => {
+    console.error(`[${label}] preload error: ${preloadPath} ${error?.stack || error?.message || error}`);
+  });
+  webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    if (level >= 2) console.error(`[${label}] console level=${level} ${sourceId}:${line} ${message}`);
+  });
+  webContents.on('did-fail-load', (_event, code, description, validatedURL, isMainFrame) => {
+    console.error(`[${label}] load failed: ${code} ${description} ${validatedURL} mainFrame=${isMainFrame}`);
+  });
+}
+
+app.on('child-process-gone', (_event, details) => {
+  console.error(`[electron] child process gone: ${JSON.stringify(details)}`);
+});
 
 function getAppRoot() {
   return app.isPackaged ? path.dirname(process.execPath) : path.resolve(__dirname, '..');
@@ -58,6 +82,7 @@ function initializeStorage() {
     ensureWritableDirectory(libraryRoot);
   }
   statePath = path.join(libraryRoot, '..', 'petpet-state.json');
+  cleanupImportStaging(libraryRoot);
   try {
     const loaded = JSON.parse(fs.readFileSync(statePath, 'utf8'));
     state = { ...state, ...loaded, settings: { ...DEFAULT_SETTINGS, ...(loaded.settings || {}) }, petCare: loaded.petCare || {} };
@@ -122,7 +147,7 @@ function ensureBundledPet() {
   if (bundledPetReady) return;
   const bundledRoot = path.join(__dirname, '..', 'assets', DEFAULT_PET_FOLDER);
   const manifestPath = path.join(bundledRoot, 'pet.json');
-  const manifest = normalizeManifest(JSON.parse(fs.readFileSync(manifestPath, 'utf8')));
+  const manifest = validatePetPackage(bundledRoot).manifest;
   const targetRoot = path.join(libraryRoot, DEFAULT_PET_FOLDER);
   const relativePaths = [...new Set([
     'pet.json',
@@ -164,23 +189,23 @@ function readPetEntry(folderName) {
   const manifestPath = path.join(directory, 'pet.json');
   if (!fs.existsSync(manifestPath)) return null;
   try {
-    assertNoSymlinkComponents(libraryRoot, folderName);
-    assertNoSymlinkComponents(directory, 'pet.json');
-    const manifest = normalizeManifest(JSON.parse(fs.readFileSync(manifestPath, 'utf8')));
-    const spritePath = resolveWithin(directory, manifest.spritesheetPath);
-    assertNoSymlinkComponents(directory, manifest.spritesheetPath);
-    if (!fs.existsSync(spritePath)) return null;
+    const tree = scanPackageTree(directory);
+    const cached = packageValidationCache.get(directory);
+    const report = cached?.fingerprint === tree.fingerprint
+      ? cached.report
+      : validatePetPackage(directory);
+    packageValidationCache.set(directory, { fingerprint: report.totals.fingerprint, report });
+    const manifest = report.manifest;
+    const spritePath = path.join(directory, manifest.spritesheetPath);
     let previewUrl = null;
-    if (manifest.previewPath) {
-      const previewPath = resolveWithin(directory, manifest.previewPath);
-      assertNoSymlinkComponents(directory, manifest.previewPath);
-      if (fs.existsSync(previewPath)) previewUrl = pathToFileURL(previewPath).href;
+    if (report.resources.preview) {
+      const previewPath = resolveWithin(directory, report.resources.preview.path);
+      previewUrl = pathToFileURL(previewPath).href;
     }
     const animationUrls = {};
-    for (const [name, relativePath] of Object.entries(manifest.care?.animations || {})) {
-      const animationPath = resolveWithin(directory, relativePath);
-      assertNoSymlinkComponents(directory, relativePath);
-      if (fs.existsSync(animationPath)) animationUrls[name] = pathToFileURL(animationPath).href;
+    for (const [name, resource] of Object.entries(report.resources.animations)) {
+      const animationPath = resolveWithin(directory, resource.path);
+      animationUrls[name] = pathToFileURL(animationPath).href;
     }
     return {
       folderName,
@@ -190,6 +215,7 @@ function readPetEntry(folderName) {
       spriteUrl: pathToFileURL(spritePath).href,
       previewUrl,
       animationUrls,
+      runtimeCapabilities: createRuntimeCapabilityReport(report),
       bundled: folderName === DEFAULT_PET_FOLDER,
     };
   } catch {
@@ -213,6 +239,7 @@ function serializePetEntry(entry) {
     spriteUrl: entry.spriteUrl,
     previewUrl: entry.previewUrl,
     animationUrls: entry.animationUrls,
+    runtimeCapabilities: entry.runtimeCapabilities,
     bundled: entry.bundled,
   };
 }
@@ -338,9 +365,12 @@ function openPreviewWindow() {
     minHeight: 560,
     title: COPY.previewTitle,
     backgroundColor: '#f4f7fb',
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
+    webPreferences: createRendererWebPreferences(path.join(__dirname, 'preload.js')),
   });
-  previewWindow.loadFile(path.join(app.getAppPath(), 'preview.html'));
+  attachRendererDiagnostics(previewWindow, 'preview');
+  previewWindow.loadFile(path.join(app.getAppPath(), 'preview.html')).catch((error) => {
+    console.error(`[preview] load error: ${error.stack || error.message}`);
+  });
   previewWindow.on('closed', () => { previewWindow = null; });
 }
 
@@ -356,9 +386,12 @@ function createPetWindow() {
     hasShadow: false,
     alwaysOnTop: true,
     show: false,
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
+    webPreferences: createRendererWebPreferences(path.join(__dirname, 'preload.js')),
   });
-  petWindow.loadFile(path.join(app.getAppPath(), 'index.html'));
+  attachRendererDiagnostics(petWindow, 'pet');
+  petWindow.loadFile(path.join(app.getAppPath(), 'index.html')).catch((error) => {
+    console.error(`[pet] load error: ${error.stack || error.message}`);
+  });
   const placeAndShow = () => {
     const area = screen.getPrimaryDisplay().workArea;
     const bounds = petWindow.getBounds();
@@ -379,65 +412,13 @@ function createManagerWindow() {
     minHeight: 700,
     title: COPY.managerTitle,
     backgroundColor: '#f7f8fc',
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
+    webPreferences: createRendererWebPreferences(path.join(__dirname, 'preload.js')),
   });
-  managerWindow.loadFile(path.join(app.getAppPath(), 'manager.html'));
+  attachRendererDiagnostics(managerWindow, 'manager');
+  managerWindow.loadFile(path.join(app.getAppPath(), 'manager.html')).catch((error) => {
+    console.error(`[manager] load error: ${error.stack || error.message}`);
+  });
   managerWindow.on('closed', () => { managerWindow = null; });
-}
-
-function findManifestRoot(directory) {
-  if (fs.existsSync(path.join(directory, 'pet.json'))) return directory;
-  for (const child of fs.readdirSync(directory, { withFileTypes: true })) {
-    if (child.isDirectory() && fs.existsSync(path.join(directory, child.name, 'pet.json'))) return path.join(directory, child.name);
-  }
-  throw new Error('找不到 pet.json，桌宠包根目录必须包含 pet.json');
-}
-
-function validateSpriteFile(spritePath) {
-  const extension = path.extname(spritePath).toLowerCase();
-  if (!['.webp', '.png'].includes(extension)) throw new Error('精灵图必须是 WEBP 或 PNG 文件');
-  const stats = fs.statSync(spritePath);
-  if (!stats.isFile() || stats.size <= 0 || stats.size > 100 * 1024 * 1024) throw new Error('精灵图文件无效或超过 100 MB');
-}
-
-function importPetDirectory(sourceDirectory) {
-  const sourceRoot = findManifestRoot(sourceDirectory);
-  assertNoSymlinkComponents(path.dirname(sourceRoot), path.basename(sourceRoot));
-  const manifestPath = path.join(sourceRoot, 'pet.json');
-  assertNoSymlinkComponents(sourceRoot, 'pet.json');
-  const manifest = normalizeManifest(JSON.parse(fs.readFileSync(manifestPath, 'utf8')));
-  const sourceSprite = resolveWithin(sourceRoot, manifest.spritesheetPath);
-  assertNoSymlinkComponents(sourceRoot, manifest.spritesheetPath);
-  validateSpriteFile(sourceSprite);
-  const existingNames = new Set(fs.readdirSync(libraryRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name));
-  const folderName = getUniquePetFolderName(manifest.id, existingNames);
-  const targetRoot = path.join(libraryRoot, folderName);
-  fs.mkdirSync(targetRoot, { recursive: true });
-  copyFileIfPresent(manifestPath, path.join(targetRoot, 'pet.json'));
-  copyFileIfPresent(sourceSprite, resolveWithin(targetRoot, manifest.spritesheetPath));
-  if (manifest.previewPath) {
-    assertNoSymlinkComponents(sourceRoot, manifest.previewPath);
-    const previewPath = resolveWithin(sourceRoot, manifest.previewPath);
-    copyFileIfPresent(previewPath, resolveWithin(targetRoot, manifest.previewPath));
-  }
-  for (const relativePath of Object.values(manifest.care?.animations || {})) {
-    assertNoSymlinkComponents(sourceRoot, relativePath);
-    const animationPath = resolveWithin(sourceRoot, relativePath);
-    if (!fs.existsSync(animationPath)) throw new Error(`找不到互动动画资源：${relativePath}`);
-    copyFileIfPresent(animationPath, resolveWithin(targetRoot, relativePath));
-  }
-  copyFileIfPresent(path.join(sourceRoot, 'README.txt'), path.join(targetRoot, 'README.txt'));
-  return readPetEntry(folderName);
-}
-
-async function importPetZip(zipPath) {
-  const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'petpet-import-'));
-  try {
-    await extractZip(zipPath, { dir: tempRoot });
-    return importPetDirectory(tempRoot);
-  } finally {
-    fs.rmSync(tempRoot, { recursive: true, force: true });
-  }
 }
 
 async function chooseAndImport(kind) {
@@ -445,7 +426,11 @@ async function chooseAndImport(kind) {
   if (kind === 'zip') options.filters = [{ name: '桌宠包', extensions: ['zip'] }];
   const result = await dialog.showOpenDialog(managerWindow, options);
   if (result.canceled || !result.filePaths[0]) return null;
-  const entry = kind === 'zip' ? await importPetZip(result.filePaths[0]) : importPetDirectory(result.filePaths[0]);
+  const imported = kind === 'zip'
+    ? await importPetZip(result.filePaths[0], { libraryRoot, tempRoot: app.getPath('temp') })
+    : importPetDirectory(result.filePaths[0], { libraryRoot });
+  const entry = readPetEntry(imported.folderName);
+  if (!entry) throw new Error('导入后的桌宠校验失败');
   managerWindow?.webContents.send('manager-state', getManagerState());
   return serializePetEntry(entry);
 }

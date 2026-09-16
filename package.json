@@ -10,7 +10,8 @@
     "package:win": "electron-packager . 派派桌宠管理器 --platform=win32 --arch=x64 --out=release --overwrite --asar --prune=true --icon=assets/app-icon.ico --ignore=\"\\.electron-cache|\\.electron-zip-cache|\\.smoke-user-data|\\.old-smoke-user-data|release|dist|test|artifacts|pets|petpet-state\\.json|preview-assets|\\.log\""
   },
   "dependencies": {
-    "extract-zip": "^2.0.1"
+    "extract-zip": "^2.0.1",
+    "yauzl": "^2.10.0"
   },
   "devDependencies": {
     "electron": "^44.3.0",
