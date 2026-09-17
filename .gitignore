@@ -7,8 +7,12 @@ artifacts/
 *.log
 .smoke-user-data/
 .old-smoke-user-data/
+.manual-qa-user-data/
+.qa-*/
 .electron-cache/
 .electron-zip-cache/
 pets/
 petpet-state.json
 preview-assets/
+release-final*/
+release-v*/

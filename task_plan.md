@@ -41,9 +41,17 @@
 
 ## 最终发布准备（2026-09-16）
 
-- [completed] 核对版本为 `1.0.0`，未修改已通过 QA 的功能逻辑。
+- [completed] 将发布元数据统一为 `1.1.0`，未修改已通过 QA 的功能逻辑。
 - [completed] 保留原 `release` 和已通过 QA 的 `release-final` 目录及数据，生成独立的 `release-final-delivery\\派派桌宠管理器-win32-x64` 交付目录。
 - [completed] 核对 EXE、`resources\\app.asar`、应用图标和软团团资源；交付目录 73 个文件、2 个目录，app.asar 270 个条目。
 - [completed] 交付目录未发现测试目录、QA 临时目录、缓存、运行态文件或开发计划文件。
 - [completed] 完成用户启动/导入说明、更新日志、发布记录和中文文案审核表。
 - [completed] QA 已确认原生窗口 UI、按钮 IPC、桌宠互动、自动演示、预览窗口和正常退出，完成最终本地发布交付。
+
+## v1.1.0 发布收尾（2026-09-17）
+
+- [completed] 清点并保留 7 个 QA 用户数据目录作为验收证据；不纳入正式包。
+- [completed] 清理 39 个经核对为空的异常目录。
+- [completed] 统一版本号为 `1.1.0`，重新生成独立的 `release-v1.1.0\\派派桌宠管理器-win32-x64`。
+- [completed] 核对 EXE、app.asar、图标和软团团资源，发布目录 73 个文件、2 个目录，app.asar 43 个条目。
+- [pending] 压缩正式包、创建 `v1.1.0` 标签、推送并创建 GitHub Release；等待最终 GitHub 操作验证。

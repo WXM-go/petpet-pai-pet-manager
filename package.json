@@ -1,6 +1,6 @@
 {
   "name": "petpet-manager",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "派派桌宠管理器：支持像素、插画、3D 与手绘风格的 Windows 桌宠管理工具",
   "main": "src/main.js",

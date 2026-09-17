@@ -189,3 +189,12 @@
 - [complete] 用户已确认最终候选包的原生窗口 UI、按钮 IPC、桌宠互动、自动演示、预览窗口和正常退出均通过。
 - [complete] QA 手工验收阻断已解除，可以进入最终发布交付。
 - [complete] 从 QA 通过的 `release-final` 白名单复制出 `release-final-delivery`；EXE 与 app.asar 哈希一致，交付目录不含 QA 运行态数据。
+
+## 2026-09-17 v1.1.0 发布收尾
+
+- [complete] 逐项核对 7 个 QA 临时目录：均为独立 Electron 用户数据目录，保留作 QA 证据，不纳入正式包。
+- [complete] 逐项核对 39 个异常目录：全部无文件、仅含空的 `Microsoft\\Spelling\\neutral` 目录树，已安全清理。
+- [complete] 将 `package.json`、`package-lock.json` 和 app.asar 内应用版本统一为 `1.1.0`。
+- [complete] 从当前工作区源码重新打包 Windows 10/11 x64 便携版到 `release-v1.1.0\\派派桌宠管理器-win32-x64`，未覆盖旧 release 或用户数据。
+- [complete] 新包 73 个文件、2 个目录，app.asar 43 个条目；无测试目录、QA 临时目录、缓存、开发记录或运行态文件。
+- [complete] EXE 文件版本为 `1.1.0`，EXE、app.asar、图标和软团团资源均已核对。
