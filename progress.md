@@ -198,3 +198,4 @@
 - [complete] 从当前工作区源码重新打包 Windows 10/11 x64 便携版到 `release-v1.1.0\\派派桌宠管理器-win32-x64`，未覆盖旧 release 或用户数据。
 - [complete] 新包 73 个文件、2 个目录，app.asar 43 个条目；无测试目录、QA 临时目录、缓存、开发记录或运行态文件。
 - [complete] EXE 文件版本为 `1.1.0`，EXE、app.asar、图标和软团团资源均已核对。
+- [complete] 创建并推送 `v1.1.0` 标签，GitHub Release 已发布并上传 `petpet-manager-v1.1.0-windows-x64.zip`；资产大小与本地 ZIP 一致。

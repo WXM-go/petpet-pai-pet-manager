@@ -54,4 +54,4 @@
 - [completed] 清理 39 个经核对为空的异常目录。
 - [completed] 统一版本号为 `1.1.0`，重新生成独立的 `release-v1.1.0\\派派桌宠管理器-win32-x64`。
 - [completed] 核对 EXE、app.asar、图标和软团团资源，发布目录 73 个文件、2 个目录，app.asar 43 个条目。
-- [pending] 压缩正式包、创建 `v1.1.0` 标签、推送并创建 GitHub Release；等待最终 GitHub 操作验证。
+- [completed] 压缩正式包、创建并推送 `v1.1.0` 标签、推送 `main`，并创建 GitHub Release 上传正式 ZIP。
